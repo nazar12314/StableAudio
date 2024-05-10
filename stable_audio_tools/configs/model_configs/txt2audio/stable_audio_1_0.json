@@ -1,0 +1,93 @@
+{
+    "model_type": "diffusion_cond",
+    "sample_size": 245760,
+    "sample_rate": 48000,
+    "audio_channels": 2,
+    "model": {
+        "pretransform": {
+            "type": "autoencoder",
+            "iterate_batch": true,
+            "config": {
+                "encoder": {
+                    "type": "dac",
+                    "config": {
+                        "in_channels": 2,
+                        "latent_dim": 128,
+                        "d_model": 128,
+                        "strides": [4, 4, 8, 8]
+                    }
+                },
+                "decoder": {
+                    "type": "dac",
+                    "config": {
+                        "out_channels": 2,
+                        "latent_dim": 64,
+                        "channels": 1536,
+                        "rates": [8, 8, 4, 4]
+                    }
+                },
+                "bottleneck": {
+                    "type": "vae"
+                },
+                "latent_dim": 64,
+                "downsampling_ratio": 1024,
+                "io_channels": 2
+            }
+        },
+        "conditioning": {
+            "configs": [
+                {
+                    "id": "prompt",
+                    "type": "clap_text",
+                    "config": {
+                        "audio_model_type": "HTSAT-base",
+                        "enable_fusion": false,
+                        "clap_ckpt_path": "log/checkpoints/clap/clap_newdata.pt",
+                        "use_text_features": true,
+                        "feature_layer_ix": -2
+                    }
+                }
+            ],
+            "cond_dim": 768
+        },
+        "diffusion": {
+            "type": "adp_cfg_1d",
+            "cross_attention_cond_ids": ["prompt"],
+            "config": {
+                "in_channels": 64,
+                "context_embedding_features": 768,
+                "context_embedding_max_length": 79,
+                "channels": 256,
+                "resnet_groups": 16,
+                "kernel_multiplier_downsample": 2,
+                "multipliers": [4, 4, 4, 5, 5],
+                "factors": [1, 2, 2, 4],
+                "num_blocks": [2, 2, 2, 2],
+                "attentions": [1, 3, 3, 3, 3],
+                "attention_heads": 16,
+                "attention_multiplier": 4,
+                "use_nearest_upsample": false,
+                "use_skip_scale": true,
+                "use_context_time": true
+            }
+        },
+        "io_channels": 64
+    },
+    "training": {
+        "learning_rate": 4e-5,
+        "use_ema": false,
+        "use_reconstruction_loss": true,
+        "demo": {
+            "demo_every": 2000,
+            "demo_steps": 250,
+            "num_demos": 4,
+            "demo_cond": [
+                {"prompt": "body_layer The microphone, placed 15 meters behind, records a single shot from the Mosin Nagant M1938 rifle, caliber 7.62x54r, from a medium distance."},
+                {"prompt": "burst_layer MP5 submachine gun, cal 9mm, firing burst shots, medium perspective, microphone positioned 12 meters to the right"},
+                {"prompt": "designed_sound Mac 11 submachine gun, cal 9mm, designed sound of burst shots, close composite"},
+                {"prompt": "tail_layer Gunshot tail of: From a distant perspective, within a forest setting 50 meters away, the Bergmann MP28's single shots, carrying 9x19mm rounds, are captured."}
+            ],
+            "demo_cfg_scales": [3, 6, 9]
+        }
+    }
+}
